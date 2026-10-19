@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Flashcard Generator</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f1f7f7;color:#17324d}
+header{background:#0d9488;color:white;padding:24px;text-align:center}main{max-width:900px;margin:24px auto;padding:0 16px}
+.panel,.card{background:white;border-radius:16px;padding:20px;box-shadow:0 5px 18px #17324d12;margin-bottom:16px}
+label{display:block;font-weight:bold;margin:10px 0 6px}input,select,textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:9px;font-size:16px}
+button{border:0;border-radius:9px;padding:11px 15px;margin:5px 4px 5px 0;background:#0d9488;color:white;font-weight:bold;cursor:pointer}
+button.secondary{background:#e2e8f0;color:#17324d}button.easy{background:#15803d}button.revise{background:#d97706}button.hard{background:#b91c1c}
+.card{min-height:230px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.question{font-size:24px;font-weight:bold;margin:18px 0}.answer{font-size:18px;line-height:1.5;color:#334155}
+.small{color:#64748b;font-size:14px}.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.hidden{display:none}.progress{height:8px;background:#e2e8f0;border-radius:9px;overflow:hidden}.bar{height:100%;background:#0d9488;width:0%}
+</style></head>
+<body>
+<header><h1>📚 AI-Powered Flashcard Generator</h1><p>Generate, review and organize study flashcards</p></header>
+<main>
+<section class="panel">
+<h2>1. Enter Study Topic</h2>
+<label for="topic">Subject / Topic</label><input id="topic" value="Generative AI" placeholder="e.g. Cloud Computing">
+<label for="material">Optional study material</label><textarea id="material" rows="3" placeholder="Paste notes here (optional)"></textarea>
+<button onclick="generateCards()">Generate 25 Flashcards</button>
+<p class="small">Demo note: this offline practical uses built-in sample cards. For real AI-generated cards, paste a prompt into an AI tool and use the generated Q&A in this app.</p>
+</section>
+<section id="study" class="hidden">
+<div class="panel"><div class="row" style="justify-content:space-between"><span id="category">Category</span><span id="count">Card 1 of 25</span></div><div class="progress"><div class="bar" id="bar"></div></div></div>
+<div class="card"><div class="small" id="side">QUESTION</div><div class="question" id="question"></div><div class="answer hidden" id="answer"></div><button id="reveal" onclick="revealAnswer()">Reveal Answer</button></div>
+<div class="row"><button class="secondary" onclick="move(-1)">← Previous</button><button onclick="move(1)">Next →</button></div>
+<div class="panel"><h3>Revision Mode: How difficult was this card?</h3><div class="row"><button class="easy" onclick="mark('Easy')">Easy</button><button class="revise" onclick="mark('Needs Revision')">Needs Revision</button><button class="hard" onclick="mark('Difficult')">Difficult</button></div><p id="status" class="small">Not rated yet</p><p id="summary" class="small"></p></div>
+</section>
+</main>
+<script>
+const cards=[
+["What is Generative AI?","AI that creates new content such as text, images, audio or code.","Basics"],
+["What is a prompt?","An instruction or input given to an AI model.","Basics"],
+["What is a large language model (LLM)?","A model trained on large amounts of text to understand and generate language.","Basics"],
+["What is prompt engineering?","Designing clear instructions to guide an AI model toward useful outputs.","Prompting"],
+["What is a zero-shot prompt?","A prompt that asks the model to do a task without examples.","Prompting"],
+["What is a one-shot prompt?","A prompt that provides one example before asking the model to perform a task.","Prompting"],
+["What is few-shot prompting?","Providing a small number of examples in the prompt.","Prompting"],
+["What is a token in language models?","A small unit of text processed by a model; it may be a word or part of a word.","Basics"],
+["What is model training?","The process of adjusting model parameters using data to learn patterns.","Model Lifecycle"],
+["What is fine-tuning?","Further training a pre-trained model on task-specific data.","Model Lifecycle"],
+["What is an AI hallucination?","When a model produces information that sounds plausible but is false or unsupported.","Safety"],
+["Why should AI output be verified?","It can contain errors, bias, outdated details or fabricated facts.","Safety"],
+["What is human-in-the-loop AI?","A system where people review, guide or approve AI decisions or outputs.","Responsible AI"],
+["What is bias in AI?","A systematic unfairness in outputs that may affect people or groups.","Responsible AI"],
+["What is multimodal AI?","AI that can work with multiple data types, such as text, images and audio.","Basics"],
+["What is an embedding?","A numeric representation of data that captures semantic relationships.","Technical Concepts"],
+["What is retrieval-augmented generation (RAG)?","A method that retrieves relevant external information before generating an answer.","Technical Concepts"],
+["What is an AI chatbot?","An application that converses with users using language-processing models.","Applications"],
+["Give one educational use of Generative AI.","Creating practice questions, explanations, summaries or study flashcards.","Applications"],
+["Give one business use of Generative AI.","Drafting emails, generating marketing content or summarizing documents.","Applications"],
+["What is PEFT?","Parameter-Efficient Fine-Tuning: adapting a model by training a small subset of parameters.","Model Lifecycle"],
+["What is LoRA?","A PEFT method that adds small trainable low-rank matrices to adapt a model efficiently.","Model Lifecycle"],
+["What is temperature in text generation?","A setting that influences randomness; higher values generally produce more varied output.","Technical Concepts"],
+["Name one risk of sharing private data with AI tools.","Sensitive information may be exposed or handled in ways the user did not expect.","Safety"],
+["What is responsible use of Generative AI?","Using AI transparently, checking results, respecting privacy and avoiding harmful misuse.","Responsible AI"]
+];
+let active=[], index=0, revealed=false, ratings={};
+const machineLearningCards = [
+["What is Machine Learning?","A branch of AI that learns patterns from data.","Basics"],
+["What is a dataset?","A collection of data used for analysis and model training.","Basics"],
+["What is a feature?","An input variable used by a machine-learning model.","Data"],
+["What is a label?","The correct target output used in supervised learning.","Data"],
+["What is supervised learning?","Learning from labelled input-output examples.","Learning Types"],
+["What is unsupervised learning?","Finding patterns in data without predefined labels.","Learning Types"],
+["What is reinforcement learning?","Learning through rewards and penalties.","Learning Types"],
+["What is classification?","Predicting a category, such as spam or not spam.","Algorithms"],
+["What is regression?","Predicting a numerical value, such as a house price.","Algorithms"],
+["What is clustering?","Grouping similar data points together.","Algorithms"],
+["What is a training set?","Data used to train a machine-learning model.","Data"],
+["What is a test set?","Data used to evaluate a trained model.","Evaluation"],
+["What is overfitting?","When a model fits training data too closely and performs poorly on new data.","Evaluation"],
+["What is underfitting?","When a model is too simple to learn important data patterns.","Evaluation"],
+["What is accuracy?","The proportion of predictions that are correct.","Metrics"],
+["What is precision?","The proportion of predicted positives that are truly positive.","Metrics"],
+["What is recall?","The proportion of actual positives correctly identified.","Metrics"],
+["What is a confusion matrix?","A table comparing actual and predicted classifications.","Metrics"],
+["What is an algorithm?","A set of steps used to solve a problem.","Basics"],
+["What is data preprocessing?","Cleaning and preparing data before model training.","Data Preparation"],
+["What is feature scaling?","Adjusting numerical features to comparable scales.","Data Preparation"],
+["What is cross-validation?","Testing model performance across multiple data splits.","Evaluation"],
+["What is a decision tree?","A model that predicts using a sequence of feature-based decisions.","Algorithms"],
+["What is the k-means algorithm?","An algorithm that groups data into k clusters.","Algorithms"],
+["Give one application of Machine Learning.","Recommendations, fraud detection or image recognition.","Applications"]
+];
+function generateCards(){
+ const topic = document.getElementById('topic').value.trim().toLowerCase();
+
+ let selectedCards;
+
+ if(topic.includes('machine learning') || topic === 'ml'){
+   selectedCards = machineLearningCards;
+ } else {
+   selectedCards = cards;
+ }
+
+ active = selectedCards.map(c => ({
+   q: c[0],
+   a: c[1],
+   cat: c[2]
+ }));
+
+ document.getElementById('study').classList.remove('hidden');
+ index = 0;
+ ratings = {};
+ render();
+}
+function render(){
+ const c=active[index];document.getElementById('category').textContent='Category: '+c.cat;
+ document.getElementById('count').textContent=`Card ${index+1} of ${active.length}`;
+ document.getElementById('bar').style.width=((index+1)/active.length*100)+'%';
+ document.getElementById('question').textContent=c.q;document.getElementById('answer').textContent=c.a;
+ document.getElementById('answer').classList.add('hidden');document.getElementById('reveal').classList.remove('hidden');
+ document.getElementById('side').textContent='QUESTION';document.getElementById('status').textContent='Rating: '+(ratings[index]||'Not rated');revealed=false;
+ document.getElementById('summary').textContent=`Easy: ${Object.values(ratings).filter(x=>x==='Easy').length} | Needs Revision: ${Object.values(ratings).filter(x=>x==='Needs Revision').length} | Difficult: ${Object.values(ratings).filter(x=>x==='Difficult').length}`;
+}
+function revealAnswer(){document.getElementById('answer').classList.remove('hidden');document.getElementById('reveal').classList.add('hidden');document.getElementById('side').textContent='ANSWER';revealed=true}
+function move(n){index=(index+n+active.length)%active.length;render()}
+function mark(v){ratings[index]=v;document.getElementById('status').textContent='Rating saved: '+v;document.getElementById('summary').textContent=`Easy: ${Object.values(ratings).filter(x=>x==='Easy').length} | Needs Revision: ${Object.values(ratings).filter(x=>x==='Needs Revision').length} | Difficult: ${Object.values(ratings).filter(x=>x==='Difficult').length}`}
+</script></body></html>

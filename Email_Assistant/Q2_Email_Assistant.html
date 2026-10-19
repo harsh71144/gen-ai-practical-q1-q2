@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AI Email Assistant</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f1f7f7;color:#17324d;font-family:Arial,sans-serif}header{background:#0d9488;color:white;text-align:center;padding:24px}main{max-width:900px;margin:24px auto;padding:0 16px}.panel{background:white;padding:20px;border-radius:16px;box-shadow:0 5px 18px #17324d12;margin-bottom:16px}label{display:block;font-weight:bold;margin:12px 0 6px}input,select,textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:9px;font-size:16px}button{background:#0d9488;color:white;border:0;border-radius:9px;padding:12px 16px;font-weight:bold;cursor:pointer;margin:8px 5px 0 0}.secondary{background:#e2e8f0;color:#17324d}.output{white-space:pre-wrap;line-height:1.6;background:#f8fafc;padding:18px;border-radius:10px;border:1px solid #e2e8f0}.tag{display:inline-block;background:#ccfbf1;color:#115e59;padding:5px 9px;border-radius:99px;font-size:13px}.small{color:#64748b;font-size:14px}
+</style></head><body>
+<header><h1>✉️ AI-Powered Email Assistant</h1><p>Draft professional emails and classify sample messages</p></header>
+<main>
+<section class="panel"><h2>1. Create an Email</h2>
+<label for="purpose">Purpose of email</label><input id="purpose" placeholder="e.g. Request leave for two days">
+<label for="recipient">Recipient type</label><select id="recipient"><option>Professor</option><option>College Administration</option><option>Placement Officer</option><option>Employer</option><option>Friend</option></select>
+<label for="tone">Preferred tone</label><select id="tone"><option>Professional</option><option>Polite</option><option>Formal</option><option>Friendly</option></select>
+<label for="details">Extra details (optional)</label><textarea id="details" rows="3" placeholder="e.g. from 21 to 22 October due to illness"></textarea>
+<button onclick="draftEmail()">Generate Email Draft</button>
+</section>
+<section class="panel"><h2>2. Generated Email</h2><p id="subject"></p><div id="email" class="output">Your generated email will appear here.</div><button onclick="copyEmail()">Copy Email</button><p id="copyStatus" class="small"></p><p class="small">Demo note: this browser-only version uses templates. For real AI drafting, use an AI tool with the prompt: “Write a professional email for [purpose], recipient [type], tone [tone], details [details]. Include a subject and polite closing.”</p></section>
+<section class="panel"><h2>3. Classify Sample Emails</h2><p class="small">Choose a sample message to classify it into Academic, Administrative, Placement, or Personal.</p>
+<label for="sample">Sample email message</label><select id="sample"><option value="Please explain the assignment deadline and submission format.">Please explain the assignment deadline and submission format.</option><option value="I need to update my address in the college records.">I need to update my address in the college records.</option><option value="I am applying for the software testing internship.">I am applying for the software testing internship.</option><option value="Happy birthday! Let us meet this weekend.">Happy birthday! Let us meet this weekend.</option></select>
+<button onclick="classify()">Classify Email</button><p id="classification"></p>
+</section>
+</main><script>
+function draftEmail(){
+ const purpose=document.getElementById('purpose').value.trim()||'request your assistance';
+ const recipient=document.getElementById('recipient').value;
+ const tone=document.getElementById('tone').value;
+ const details=document.getElementById('details').value.trim();
+ let greeting=recipient==='Friend'?'Hi':recipient==='Professor'?'Respected Professor':'Dear '+recipient;
+ let closing=tone==='Friendly'?'Best wishes,':tone==='Formal'?'Yours faithfully,':'Thank you,';
+ let subjectText='Subject: '+purpose.charAt(0).toUpperCase()+purpose.slice(1);
+ let body=`${greeting},\n\nI am writing to ${purpose}.${details?' Additional details: '+details+'.':''}\n\nI would be grateful if you could consider my request. Please let me know if any further information is required.\n\n${closing}\n[Your Name]`;
+ document.getElementById('subject').innerHTML='<strong>'+escapeHtml(subjectText)+'</strong>';
+ document.getElementById('email').textContent=body;
+}
+function classify(){
+ const msg=document.getElementById('sample').value.toLowerCase();let cat='Personal';
+ if(/assignment|deadline|submission|lecture|exam|professor|academic/.test(msg))cat='Academic';
+ else if(/record|address|certificate|administration|fee|office/.test(msg))cat='Administrative';
+ else if(/internship|job|placement|resume|interview|career/.test(msg))cat='Placement';
+ document.getElementById('classification').innerHTML='Category: <span class="tag">'+cat+'</span>';
+}
+function copyEmail(){const text=document.getElementById('subject').innerText+'\n\n'+document.getElementById('email').innerText;navigator.clipboard?.writeText(text);document.getElementById('copyStatus').textContent='Email text selected for copying (clipboard permission may depend on browser).'}
+function escapeHtml(s){return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}
+</script></body></html>
